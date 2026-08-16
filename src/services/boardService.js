@@ -1,5 +1,6 @@
 /* eslint-disable no-useless-catch */
 import { slugify } from '~/utils/formatters'
+import { boardModel } from '~/models/boardModel'
 
 const createNew = async (reqBody) => {
   // xử lí logic dữ liệu tuỳ đặc thù dự án
@@ -9,9 +10,13 @@ const createNew = async (reqBody) => {
       slug: slugify(reqBody.title)
     }
     // gọi tới model để xử lý lưu bản ghi newBoard vào db
+    const createdBoard = await boardModel.createNew(newBoard)
 
+    // lấy bản ghi board sau khi gọi
+    const getNewBoard = await boardModel.findOneById(createdBoard.insertedId)
+    console.log(getNewBoard)
     // trả kết quả về service luôn phải có return
-    return newBoard
+    return getNewBoard
   } catch (error) {
     throw error
   }

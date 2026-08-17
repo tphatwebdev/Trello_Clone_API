@@ -3,6 +3,7 @@ import { slugify } from '~/utils/formatters'
 import { boardModel } from '~/models/boardModel'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
+import { cloneDeep } from 'lodash'
 
 const createNew = async (reqBody) => {
   // xử lí logic dữ liệu tuỳ đặc thù dự án
@@ -29,7 +30,16 @@ const getDetails = async (boardId) => {
     if (!board) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
     }
-    return board
+    // deep clone ra 1 cái mới để xử lý
+    const resBoard = cloneDeep(board)
+    // đưa card về đúng column của nó
+    resBoard.columns.forEach(column => {
+      // mongoDb có support hàm .equals để compare Objectid type
+      column.cards = resBoard.cards.filter(card => card.columnId.equals(column._id))
+    })
+    // Xoá card khỏi board ban đầu
+    delete resBoard.cards
+    return resBoard
   } catch (error) {
     throw error
   }

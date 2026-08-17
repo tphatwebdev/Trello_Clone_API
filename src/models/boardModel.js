@@ -43,9 +43,22 @@ const findOneById = async (id) => {
   }
 }
 
+// query tổng hợp (aggregate) để lấy toàn bộ Columnns và Cards thuộc về board
+const getDetails = async (id) => {
+  try {
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({
+      _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id
+    })
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
   createNew,
-  findOneById
+  findOneById,
+  getDetails
 }

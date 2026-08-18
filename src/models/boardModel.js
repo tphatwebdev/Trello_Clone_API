@@ -76,10 +76,25 @@ const getDetails = async (id) => {
   }
 }
 
+// push 1 giá trị columnId vào cuối mảng columnOrderIds
+const pushColumnOrderIds = async(column) => {
+  try {
+    const result = GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: typeof column.boardId === 'string' ? ObjectId.createFromHexString(column.boardId) : column.boardId },
+      { $push: { columnOrderIds: typeof column._id === 'string' ? ObjectId.createFromHexString(column._id) : column._id } },
+      { returnDocument: 'after' }
+    )
+    return result.value
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
   createNew,
   findOneById,
-  getDetails
+  getDetails,
+  pushColumnOrderIds
 }

@@ -71,7 +71,9 @@ const update = async(columnId, updateData) => {
         delete updateData[fieldName]
       }
     })
-    INVALID_UPDATE_FIELDS
+    if (updateData.cardOrderIds) {
+      updateData.cardOrderIds = updateData.cardOrderIds.map(_id => typeof _id === 'string' ? ObjectId.createFromHexString(_id) : _id )
+    }
     const result = GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
       { _id: typeof columnId === 'string' ? ObjectId.createFromHexString(columnId) : columnId },
       { $set: updateData },

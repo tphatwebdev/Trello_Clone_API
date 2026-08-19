@@ -54,7 +54,7 @@ const pushCardOrderIds = async(card) => {
       { $push: { cardOrderIds: typeof card._id === 'string' ? ObjectId.createFromHexString(card._id) : card._id } },
       { returnDocument: 'after' }
     )
-    return result.value
+    return result
   } catch (error) {
     throw new Error(error)
   }

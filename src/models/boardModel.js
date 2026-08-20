@@ -38,10 +38,10 @@ const createNew = async (data) => {
   }
 }
 
-const findOneById = async (id) => {
+const findOneById = async (boardId) => {
   try {
     const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({
-      _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id
+      _id: typeof boardId === 'string' ? ObjectId.createFromHexString(boardId) : boardId
     })
     return result
   } catch (error) {
@@ -93,6 +93,20 @@ const pushColumnOrderIds = async(column) => {
   }
 }
 
+// lấy 1 phần tử columnId ra khỏi mảng columnOrderIds
+const pullColumnOrderIds = async(column) => {
+  try {
+    const result = GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: typeof column.boardId === 'string' ? ObjectId.createFromHexString(column.boardId) : column.boardId },
+      { $pull: { columnOrderIds: typeof column._id === 'string' ? ObjectId.createFromHexString(column._id) : column._id } },
+      { returnDocument: 'after' } // Trả về kết quả mới sau khi cập nhật
+    )
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 const update = async(boardId, updateData) => {
   try {
     // lọc field mà ta không muốn cập nhật
@@ -122,5 +136,6 @@ export const boardModel = {
   findOneById,
   getDetails,
   pushColumnOrderIds,
-  update
+  update,
+  pullColumnOrderIds
 }

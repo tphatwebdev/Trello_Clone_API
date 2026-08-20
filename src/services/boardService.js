@@ -52,7 +52,7 @@ const update = async (boardId, reqBody) => {
   try {
     const updateData = {
       ...reqBody,
-      updateAt: Date.now()
+      updatedAt: Date.now()
     }
     const updatedBoard = await boardModel.update(boardId, updateData)
     return updatedBoard
@@ -66,12 +66,12 @@ const moveCardToDifferentColumn = async (reqBody) => {
     // B1: cập nhật mảng cardOrderIds của column ban đầu(xoá _id ra khỏi mảng)
     await columnModel.update(reqBody.prevColumnId, {
       cardOrderIds: reqBody.prevCardOrderIds,
-      updateAt: Date.now()
+      updatedAt: Date.now()
     })
     // B2: cập nhật mảng cardOrderIds tiếp theo(thêm _id của card vào mảng)
     await columnModel.update(reqBody.nextColumnId, {
       cardOrderIds: reqBody.nextCardOrderIds,
-      updateAt: Date.now()
+      updatedAt: Date.now()
     })
     // B3: cập nhật lại columnId mới của card đã kéo
     // => làm 1 api support riêng

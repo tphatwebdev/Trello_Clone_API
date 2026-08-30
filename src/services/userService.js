@@ -24,6 +24,7 @@ const createNew = async (reqBody) => {
       email: reqBody.email,
       password: bcryptjs.hashSync(reqBody.password, 8),
       username: nameFromEmail,
+      displayName: nameFromEmail,
       verifyToken: uuidv4()
     }
     // thực hiện lưu thông tin user vào db
@@ -133,9 +134,37 @@ const refreshToken = async (clientRefreshToken) => {
   }
 }
 
+const update = async (userId, reqBody) => {
+  try {
+    const existUser = await userModel.findOneById(userId)
+    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found!')
+    if (!existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your account is not active!')
+    // khởi tạo kết quả update user ban đầu là empty
+    let updatedUser = {}
+    //  trường hợp change password
+    if (reqBody.current_password && reqBody.new_password) {
+      // kiểm tra xem current password có đúng hay không?
+      if (!bcryptjs.compareSync(reqBody.current_password, existUser.password)) {
+        throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your current password is incorrect!')
+      }
+      // nếu current_password đúng => hash lại password mới và update lại vào DB
+      updatedUser = await userModel.update(existUser._id, {
+        password: bcryptjs.hashSync(reqBody.new_password, 8)
+      })
+    } else {
+      // trường hợp update các thông tin chung, ví dụ displayName
+      updatedUser = await userModel.update(existUser._id, reqBody)
+    }
+    return pickUser(updatedUser)
+  } catch (error) {
+    throw error
+  }
+}
+
 export const userService = {
   createNew,
   verifyAccount,
   login,
-  refreshToken
+  refreshToken,
+  update
 }

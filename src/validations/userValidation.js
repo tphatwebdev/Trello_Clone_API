@@ -1,7 +1,7 @@
 import Joi from 'joi'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
-import { EMAIL_RULE, EMAIL_RULE_MESSAGE, PASSWORD_RULE, PASSWORD_RULE_MESSAGE } from '~/utils/validators'
+import { EMAIL_RULE, EMAIL_RULE_MESSAGE, PASSWORD_CONFIRMATION_MESSAGE, PASSWORD_RULE, PASSWORD_RULE_MESSAGE } from '~/utils/validators'
 
 const createNew = async (req, res, next) => {
   const correctCondition = Joi.object({
@@ -44,9 +44,25 @@ const login = async (req, res, next) => {
   }
 }
 
+const update = async (req, res, next) => {
+  const correctCondition = Joi.object({
+    displayName: Joi.string().trim().strict(),
+    current_password: Joi.string().pattern(PASSWORD_RULE).message(`current_password: ${PASSWORD_CONFIRMATION_MESSAGE}`),
+    new_password: Joi.string().pattern(PASSWORD_RULE).message(`new_password: ${PASSWORD_CONFIRMATION_MESSAGE}`)
+  })
+  try {
+    // đôi với trường hợp update, cho phép unknow để khong cần đẩy 1 số field lên
+    await correctCondition.validateAsync(req.body, { abortEarly: false, allowUnknown: true })
+    next()
+  } catch (error) {
+    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+  }
+}
+
 export const userValidation = {
   createNew,
   verifyAccount,
-  login
+  login,
+  update
 }
 

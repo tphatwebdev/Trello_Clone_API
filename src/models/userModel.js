@@ -1,7 +1,7 @@
 import Joi from 'joi'
-import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { EMAIL_RULE, EMAIL_RULE_MESSAGE } from '~/utils/validators'
+import { toObjectId } from '~/utils/formatters'
 
 // Define tạm 2 roles cho user
 const USER_ROLES = {
@@ -30,7 +30,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
 const INVALID_UPDATE_FIELDS = ['_id', 'email', 'username', 'createdAt']
 
 const validateBeforeCreate = async (data) => {
-  return await USER_COLLECTION_SCHEMA.validateAsync(data, { abortEarly:false })
+  return await USER_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
 const createNew = async (data) => {
@@ -45,7 +45,9 @@ const createNew = async (data) => {
 
 const findOneById = async (userId) => {
   try {
-    const result = await GET_DB().collection(USER_COLLECTION_NAME).findOne({ _id: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId })
+    const result = await GET_DB().collection(USER_COLLECTION_NAME).findOne({
+      _id: toObjectId(userId)
+    })
     return result
   } catch (error) {
     throw new Error(error)
@@ -70,7 +72,7 @@ const update = async (userId, updateData) => {
       }
     })
     const result = await GET_DB().collection(USER_COLLECTION_NAME).findOneAndUpdate(
-      { _id: typeof userId === 'string' ? ObjectId.createFromHexString(userId) : userId },
+      { _id: toObjectId(userId) },
       { $set: updateData },
       { returnDocument: 'after' }
     )

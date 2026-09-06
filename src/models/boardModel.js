@@ -1,8 +1,8 @@
 import Joi from 'joi'
-import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { BOARD_TYPES } from '~/utils/constants'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import { toObjectId, toObjectIds } from '~/utils/formatters'
 import { columnModel } from './columnModel'
 import { cardModel } from './cardModel'
 import { pagingSkipValue } from '~/utils/algorithsm'
@@ -34,13 +34,17 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
 const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
 
 const validateBeforeCreate = async (data) => {
-  return await await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
+  return await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
-const createNew = async (data) => {
+const createNew = async (userId, data) => {
   try {
     const validData = await validateBeforeCreate(data)
-    const createdBoard = await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(validData)
+    const newBoardToAdd = {
+      ...validData,
+      ownerIds: [toObjectId(userId)]
+    }
+    const createdBoard = await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(newBoardToAdd)
     return createdBoard
   } catch (error) {
     throw new Error(error)
@@ -50,7 +54,7 @@ const createNew = async (data) => {
 const findOneById = async (boardId) => {
   try {
     const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({
-      _id: typeof boardId === 'string' ? ObjectId.createFromHexString(boardId) : boardId
+      _id: toObjectId(boardId)
     })
     return result
   } catch (error) {
@@ -59,16 +63,18 @@ const findOneById = async (boardId) => {
 }
 
 // query tổng hợp (aggregate) để lấy toàn bộ Columnns và Cards thuộc về board
-const getDetails = async (id) => {
+const getDetails = async (userId, boardId) => {
   try {
-    // const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({
-    //   _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id
-    // })
+    const queryConditions = [
+      { _id: toObjectId(boardId) },
+      { _destroy: false },
+      { $or: [
+        { ownerIds: { $all: [toObjectId(userId)] } },
+        { memberIds: { $all: [toObjectId(userId)] } }
+      ] }
+    ]
     const result = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate([
-      { $match: {
-        _id: typeof id === 'string' ? ObjectId.createFromHexString(id) : id,
-        _destroy: false
-      } },
+      { $match: { $and: queryConditions } },
       { $lookup: {
         from: columnModel.COLUMN_COLLECTION_NAME,
         localField: '_id',
@@ -92,8 +98,8 @@ const getDetails = async (id) => {
 const pushColumnOrderIds = async(column) => {
   try {
     const result = GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
-      { _id: typeof column.boardId === 'string' ? ObjectId.createFromHexString(column.boardId) : column.boardId },
-      { $push: { columnOrderIds: typeof column._id === 'string' ? ObjectId.createFromHexString(column._id) : column._id } },
+      { _id: toObjectId(column.boardId) },
+      { $push: { columnOrderIds: toObjectId(column._id) } },
       { returnDocument: 'after' } // Trả về kết quả mới sau khi cập nhật
     )
     return result
@@ -106,8 +112,8 @@ const pushColumnOrderIds = async(column) => {
 const pullColumnOrderIds = async(column) => {
   try {
     const result = GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
-      { _id: typeof column.boardId === 'string' ? ObjectId.createFromHexString(column.boardId) : column.boardId },
-      { $pull: { columnOrderIds: typeof column._id === 'string' ? ObjectId.createFromHexString(column._id) : column._id } },
+      { _id: toObjectId(column.boardId) },
+      { $pull: { columnOrderIds: toObjectId(column._id) } },
       { returnDocument: 'after' } // Trả về kết quả mới sau khi cập nhật
     )
     return result
@@ -125,10 +131,10 @@ const update = async(boardId, updateData) => {
       }
     })
     if (updateData.columnOrderIds) {
-      updateData.columnOrderIds = updateData.columnOrderIds.map(_id => typeof _id === 'string' ? ObjectId.createFromHexString(_id) : _id )
+      updateData.columnOrderIds = toObjectIds(updateData.columnOrderIds)
     }
     const result = GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
-      { _id: typeof boardId === 'string' ? ObjectId.createFromHexString(boardId) : boardId },
+      { _id: toObjectId(boardId) },
       { $set: updateData },
       { returnDocument: 'after' }
     )
@@ -145,8 +151,8 @@ const getBoards = async(userId, page, itemsPerPage) => {
       { _destroy: false },
       // điều kiện 2: cái thằng userId đang thực hiện request này phải thuộc vào mọt trong 2 cái mảng ownerIds hoặc memberIds, sử dụng toán tử $all của mongo
       { $or: [
-        { ownerIds: { $all: [ObjectId.createFromHexString(userId)] } },
-        { memberIds: { $all: [ObjectId.createFromHexString(userId)] } }
+        { ownerIds: { $all: [toObjectId(userId)] } },
+        { memberIds: { $all: [toObjectId(userId)] } }
       ] }
     ]
 
@@ -169,7 +175,6 @@ const getBoards = async(userId, page, itemsPerPage) => {
       // Khai báo thuộc tính collation locale 'en' để fix vụ chữ B hoa và a thường ở trên
       { collation: { locale: 'en' } }
     ).toArray()
-    console.log('query:', query)
     const res = query[0]
     return {
       boards: res.queyBoards || [],

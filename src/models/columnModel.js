@@ -1,8 +1,7 @@
 import Joi from 'joi'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 import { GET_DB } from '~/config/mongodb'
-import { ObjectId } from 'mongodb'
-
+import { toObjectId, toObjectIds } from '~/utils/formatters'
 
 const COLUMN_COLLECTION_NAME = 'columns'
 const COLUMN_COLLECTION_SCHEMA = Joi.object({
@@ -21,7 +20,7 @@ const COLUMN_COLLECTION_SCHEMA = Joi.object({
 const INVALID_UPDATE_FIELDS = ['_id', 'boardId', 'createdAt']
 
 const validateBeforeCreate = async (data) => {
-  return await await COLUMN_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
+  return await COLUMN_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
 const createNew = async (data) => {
@@ -30,7 +29,7 @@ const createNew = async (data) => {
     // biến đổi id string sang objectId trước khi lưu
     const newColumnToAdd = {
       ...validData,
-      boardId: ObjectId.createFromHexString(validData.boardId)
+      boardId: toObjectId(validData.boardId)
     }
     const createdColumn = await GET_DB().collection(COLUMN_COLLECTION_NAME).insertOne(newColumnToAdd)
     return createdColumn
@@ -42,7 +41,7 @@ const createNew = async (data) => {
 const findOneById = async (columnId) => {
   try {
     const result = await GET_DB().collection(COLUMN_COLLECTION_NAME).findOne({
-      _id: typeof columnId === 'string' ? ObjectId.createFromHexString(columnId) : columnId
+      _id: toObjectId(columnId)
     })
     return result
   } catch (error) {
@@ -53,8 +52,8 @@ const findOneById = async (columnId) => {
 const pushCardOrderIds = async(card) => {
   try {
     const result = GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
-      { _id: typeof card.columnId === 'string' ? ObjectId.createFromHexString(card.columnId) : card.columnId },
-      { $push: { cardOrderIds: typeof card._id === 'string' ? ObjectId.createFromHexString(card._id) : card._id } },
+      { _id: toObjectId(card.columnId) },
+      { $push: { cardOrderIds: toObjectId(card._id) } },
       { returnDocument: 'after' }
     )
     return result
@@ -72,10 +71,10 @@ const update = async(columnId, updateData) => {
       }
     })
     if (updateData.cardOrderIds) {
-      updateData.cardOrderIds = updateData.cardOrderIds.map(_id => typeof _id === 'string' ? ObjectId.createFromHexString(_id) : _id )
+      updateData.cardOrderIds = toObjectIds(updateData.cardOrderIds)
     }
     const result = GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
-      { _id: typeof columnId === 'string' ? ObjectId.createFromHexString(columnId) : columnId },
+      { _id: toObjectId(columnId) },
       { $set: updateData },
       { returnDocument: 'after' }
     )
@@ -88,7 +87,7 @@ const update = async(columnId, updateData) => {
 const deleteOneById = async (columnId) => {
   try {
     const result = await GET_DB().collection(COLUMN_COLLECTION_NAME).deleteOne({
-      _id: typeof columnId === 'string' ? ObjectId.createFromHexString(columnId) : columnId
+      _id: toObjectId(columnId)
     })
     return result
   } catch (error) {

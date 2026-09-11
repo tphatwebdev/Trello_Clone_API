@@ -204,6 +204,19 @@ const getBoards = async(userId, page, itemsPerPage) => {
   }
 }
 
+const pushMemberIds = async(boardId, userId) => {
+  try {
+    const result = GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: toObjectId(boardId) },
+      { $push: { memberIds: toObjectId(userId) } },
+      { returnDocument: 'after' } // Trả về kết quả mới sau khi cập nhật
+    )
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
@@ -213,5 +226,6 @@ export const boardModel = {
   pushColumnOrderIds,
   update,
   pullColumnOrderIds,
-  getBoards
+  getBoards,
+  pushMemberIds
 }

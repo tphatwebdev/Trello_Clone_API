@@ -77,7 +77,7 @@ const update = async(cardId, updateData) => {
       updateData.columnId = toObjectId(updateData.columnId)
     }
 
-    const result = GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
       { _id: toObjectId(cardId) },
       { $set: updateData },
       { returnDocument: 'after' }
@@ -99,11 +99,30 @@ const deleteManyByColumnId = async (columnId) => {
   }
 }
 
+/**
+ * đây 1 phần tử comment vào mảng comments
+ * unshift là để đẩy phần tử vào đầu mảng
+ * vẫn dùng $push (mặc định đẩy vào cuối mảng) nhưng bọc data vào Array để trong $each và chỉ định $position: 0
+ */
+const unshiftNewComment = async (cardId, commentData) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: toObjectId(cardId) },
+      { $push: { comments: { $each: [commentData], $position: 0 } } },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const cardModel = {
   CARD_COLLECTION_NAME,
   CARD_COLLECTION_SCHEMA,
   createNew,
   findOneById,
   update,
-  deleteManyByColumnId
+  deleteManyByColumnId,
+  unshiftNewComment
 }

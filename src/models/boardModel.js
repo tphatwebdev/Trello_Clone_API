@@ -163,7 +163,7 @@ const update = async(boardId, updateData) => {
   }
 }
 
-const getBoards = async(userId, page, itemsPerPage) => {
+const getBoards = async(userId, page, itemsPerPage, queryFilters) => {
   try {
     const queryConditions = [
       // diều kiện 1: board chưa bị xoá
@@ -175,6 +175,17 @@ const getBoards = async(userId, page, itemsPerPage) => {
       ] }
     ]
 
+    // xử lý query filter cho từng trường hợp search board, ví dụ search theo title
+    if (queryFilters) {
+      Object.keys(queryFilters).forEach(key => {
+        // queryFilters[key] ví dụ queryFilters[title] nếu phía FE đẩy lên q[title]
+        // có phân biệt chữ hoa chữ thường
+        // queryConditions.push({ [key]: { $regex: queryFilters[key] } })
+        // không phân biệt hoa thường
+        queryConditions.push({ [key]: { $regex: new RegExp(queryFilters[key], 'i') } })
+      })
+    }
+    console.log(queryConditions)
     const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate(
       [
         { $match: { $and: queryConditions } },

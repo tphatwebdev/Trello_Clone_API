@@ -185,7 +185,6 @@ const getBoards = async(userId, page, itemsPerPage, queryFilters) => {
         queryConditions.push({ [key]: { $regex: new RegExp(queryFilters[key], 'i') } })
       })
     }
-    console.log(queryConditions)
     const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate(
       [
         { $match: { $and: queryConditions } },

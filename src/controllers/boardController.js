@@ -47,7 +47,6 @@ const getBoards = async (req, res, next) => {
     // page và itemsPerPage được truyền vào trong query url từ phía FE nên BE sẽ lấy thông qua req.query
     const { page, itemsPerPage, q } = req.query
     const queryFilters = q
-    console.log(queryFilters)
     const result = await boardService.getBoards(userId, page, itemsPerPage, queryFilters)
     res.status(StatusCodes.OK).json(result)
   } catch (error) {

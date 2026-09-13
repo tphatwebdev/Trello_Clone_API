@@ -70,45 +70,6 @@ The server leverages the **MongoDB Native Driver** directly (without the overhea
 
 ---
 
-## 🏗️ System Architecture & Workflow
-
-```mermaid
-flowchart TD
-    Client[Taskly Client / Web Browser]
-    
-    subgraph Express_Server [Express Server (Babel / Node.js)]
-        AuthMid[Auth & Cookie Middleware]
-        JoiVal[Joi Validation Layer]
-        Controllers[Controller Layer]
-        Services[Service Business Logic]
-        ErrorMid[Centralized Error Handling]
-    end
-    
-    subgraph External_Services [Third-Party Services]
-        Cloudinary[(Cloudinary CDN)]
-        Brevo[(Brevo Email Service)]
-    end
-    
-    subgraph Database [MongoDB Cluster]
-        DB[(MongoDB Native Driver)]
-    end
-    
-    subgraph RealTime [Socket.io Engine]
-        SocketServer[WebSocket Gateway]
-    end
-
-    Client -->|REST Requests with HttpOnly Cookies| AuthMid
-    AuthMid --> JoiVal --> Controllers --> Services
-    Services -->|Native Aggregations & Queries| DB
-    Services -->|Memory Buffer Stream| Cloudinary
-    Services -->|Transactional Emails| Brevo
-    Services -.-> ErrorMid -.-> Client
-    
-    Client <==>|Bidirectional Events| SocketServer
-```
-
----
-
 ## 🗄️ Database Collections & Schemas
 
 | Collection | Key Attributes | Relationships |
